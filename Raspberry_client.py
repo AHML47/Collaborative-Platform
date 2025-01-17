@@ -6,12 +6,15 @@ import cv2
 import os
 from dotenv import load_dotenv, dotenv_values
 
+
 streamer=StreamerHTTP('index.html')
 
 cam=CameraHelper()
 cam.start()
+load_dotenv()
+SERVER_URL = os.getenv("Server_API")
+print(f"SERVER_URL is: {SERVER_URL}")
 
-SERVER_URL = os.getenv("SERVER_API")
 
 x=0
 y=0

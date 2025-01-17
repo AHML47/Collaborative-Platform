@@ -13,7 +13,7 @@ for camera :
     sudo apt install -y python3-prctl libatlas-base-dev ffmpeg python3-pip
     sudo apt install -y python3-pyqt5 python3-opengl # only if you want GUI features
     pip3 install numpy --upgrade
-
+    pip install python-dotenv
     pip3 install picamera2
     pip install rpi-libcamera
     pip install kms
