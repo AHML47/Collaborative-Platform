@@ -5,10 +5,12 @@ import numpy as np
 from object import ObjectHelper
 #from Logger import Log
 from detector import HandDetector
-
+from component import LED
 app = Flask(__name__)
 
 detector=HandDetector()
+
+LED=LED(1,250,250,100)
 
 shape = ObjectHelper(0,(0,255,0),'rectangle',50,100,100)
 shape1 = ObjectHelper(0,(200,255,0),'rectangle',50,150,150)
@@ -52,6 +54,7 @@ def upload_stream():
                                               x,
                                               y
                                               )
+    frame = LED.detect(frame,x,y)
     frame = shape.draw(frame, x, y)
     frame = shape1.draw(frame, x, y)
     frame = shape2.draw(frame, x, y)

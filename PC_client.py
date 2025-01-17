@@ -1,34 +1,29 @@
-from camera import CameraHelper
-from streamer import StreamerHTTP
-import numpy as np
-import requests
 import cv2
-import os
+import requests
+import numpy as np
 from dotenv import load_dotenv, dotenv_values
+import os
+from streamer import StreamerHTTP
 
-
-streamer=StreamerHTTP('index.html')
-
-cam=CameraHelper()
-cam.start()
+# Initialize the HTTP streamer
+streamer = StreamerHTTP('index.html')
 
 load_dotenv()
 SERVER_URL = os.getenv("Server_API")
 print(f"SERVER_URL is: {SERVER_URL}")
 
 
-x=0
-y=0
-cap=False
 
+# Initialize the webcam (use 0 for default laptop camera)
+camera = cv2.VideoCapture(0)  # 0 is typically the default webcam; change to 1 if you have a second camera
 
-
-
+if not camera.isOpened():
+    raise Exception("Could not open the webcam.")
 
 def send_to_server_and_get (frame_bytes):
 
     files = {'video': frame_bytes}
-    frame=None
+
     response = requests.post(SERVER_URL, files=files)
 
     # Yield the frame in multipart format for streaming
@@ -48,31 +43,36 @@ def send_to_server_and_get (frame_bytes):
 
     return frame
 
-
-
 def generate_frames():
-    global cap, x, y
+
 
     while True:
-        # Capture frame-by-frame
-        frame = cam.capture_arrays()
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # Capture frame-by-frame from the webcam
+        ret, frame = camera.read()
+        if not ret:
+            print("Failed to capture frame from the camera.")
+            break
+
+        # Process the frame using the detector
 
 
+        # Encode the frame to JPEG format
         _, buffer = cv2.imencode('.jpg', frame)
         frame_bytes = buffer.tobytes()
-        frame = send_to_server_and_get(frame_bytes)
+
+        # Send the frame and additional data to the server
+        frame =  send_to_server_and_get(frame_bytes)
 
         # Yield the processed frame for streaming
         _, buffer = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
 if __name__ == '__main__':
     try:
-        #threading.Thread(target=turn_led_control, daemon=True).start()
+        # Start the HTTP streamer
         streamer.run(5000, generate_frames)
     finally:
-        cam.strop()
+        # Release the camera resource
+        camera.release()
         print('Closing video feed')
-
-
