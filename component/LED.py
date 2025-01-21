@@ -79,7 +79,7 @@ class LED() :
     def draw (self,frame,text):
         top_left, bottom_right = self.calculateXY()
         font = cv2.FONT_HERSHEY_SIMPLEX
-        font_scale = 1
+        font_scale = 0.5
         color = (255, 255, 255)  # Green color
         thickness = 2
 
@@ -90,8 +90,9 @@ class LED() :
         text_x = center_x - (text_width // 2)
         text_y = center_y + (text_height // 2)
 
-        cv2.putText(frame, text, (text_x, text_y), font, font_scale, color, thickness)
+
         cv2.rectangle(frame, top_left, bottom_right, self.color, -1)
+        cv2.putText(frame, text, (text_x, text_y), font, font_scale, color, thickness)
         return frame
 
 

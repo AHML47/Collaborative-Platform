@@ -9,7 +9,7 @@ from streamer import StreamerHTTP
 streamer = StreamerHTTP('index.html')
 
 load_dotenv()
-SERVER_URL = os.getenv("Server_API")
+SERVER_URL = os.getenv("Server_UP_API")
 print(f"SERVER_URL is: {SERVER_URL}")
 
 
@@ -20,9 +20,10 @@ camera = cv2.VideoCapture(0)  # 0 is typically the default webcam; change to 1 i
 if not camera.isOpened():
     raise Exception("Could not open the webcam.")
 
-def send_to_server_and_get (frame_bytes):
+def send_to_server_and_get_frame (frame_bytes):
 
     files = {'video': frame_bytes}
+    frame=None
 
     response = requests.post(SERVER_URL, files=files)
 
@@ -61,7 +62,7 @@ def generate_frames():
         frame_bytes = buffer.tobytes()
 
         # Send the frame and additional data to the server
-        frame =  send_to_server_and_get(frame_bytes)
+        frame =  send_to_server_and_get_frame(frame_bytes)
 
         # Yield the processed frame for streaming
         _, buffer = cv2.imencode('.jpg', frame)

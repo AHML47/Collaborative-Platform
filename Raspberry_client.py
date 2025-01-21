@@ -5,6 +5,12 @@ import requests
 import cv2
 import os
 from dotenv import load_dotenv, dotenv_values
+from datetime import datetime
+from queue import Queue
+import threading
+
+capture_queue = Queue()
+processed_queue = Queue()
 
 
 streamer=StreamerHTTP('index.html')
@@ -13,7 +19,7 @@ cam=CameraHelper()
 cam.start()
 
 load_dotenv()
-SERVER_URL = os.getenv("Server_API")
+SERVER_URL = os.getenv("Server_UP_API")
 print(f"SERVER_URL is: {SERVER_URL}")
 
 
@@ -23,12 +29,26 @@ cap=False
 
 
 
+def capture_frames():
+    while True:
+        frame = cv2.cvtColor(cam.capture_arrays(), cv2.COLOR_BGR2RGB)
+        capture_queue.put(frame)
+
+def send_and_receive_frames():
+    while True:
+        if not capture_queue.empty():
+            frame = capture_queue.get()
+            _, buffer = cv2.imencode('.jpg', frame)
+            frame_bytes = buffer.tobytes()
+            processed_frame = send_to_server_and_get_frame(frame_bytes)
+            processed_queue.put(processed_frame)
 
 
-def send_to_server_and_get (frame_bytes):
+def send_to_server_and_get_frame (frame_bytes):
 
     files = {'video': frame_bytes}
     frame=None
+
     response = requests.post(SERVER_URL, files=files)
 
     # Yield the frame in multipart format for streaming
@@ -54,22 +74,20 @@ def generate_frames():
     global cap, x, y
 
     while True:
-        # Capture frame-by-frame
-        frame = cam.capture_arrays()
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        while True:
+            if not processed_queue.empty():
+                frame = processed_queue.get()
 
-
-        _, buffer = cv2.imencode('.jpg', frame)
-        frame_bytes = buffer.tobytes()
-        frame = send_to_server_and_get(frame_bytes)
-
-        # Yield the processed frame for streaming
-        _, buffer = cv2.imencode('.jpg', frame)
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+                _, buffer = cv2.imencode('.jpg', frame)
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 if __name__ == '__main__':
     try:
         #threading.Thread(target=turn_led_control, daemon=True).start()
+
+        threading.Thread(target=capture_frames, daemon=True).start()
+        threading.Thread(target=send_and_receive_frames, daemon=True).start()
+
         streamer.run(5000, generate_frames)
     finally:
         cam.strop()
