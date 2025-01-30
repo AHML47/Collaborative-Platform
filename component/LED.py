@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv, dotenv_values
 import requests
-from Logger import Log
+import logging
 import cv2
 class LED() :
     def __init__(self, id,x,y,size):
@@ -11,10 +11,16 @@ class LED() :
         self.color=(255,0,0)
         load_dotenv()
         self.NODEMCU_URL = os.getenv("Node_API")
-        self.requests_log=Log("NodeLog.txt")
+        self.log=logging.getLogger(__name__)
+        fileH=logging.FileHandler("esp.log")
+        formatH=logging.Formatter('%(asctime)s - %(name) - %(levelname)s - %(message)s')
+        fileH.setFormatter(formatH)
+        self.log.addHandler(fileH)
+
         self.size = size
         self.status=False
         self.isIN=False
+        self.off()
 
 
     def on(self):
@@ -22,11 +28,11 @@ class LED() :
             response = requests.get(f"{self.NODEMCU_URL}/led?led{self.id}=on")
             if response.status_code == 200:
                 print(f"LED {self.id} turned on: {response.text}")
-                self.requests_log.write(f"LED {self.id} turned on: {response.text}")
+                self.log.info(f"LED {self.id} turned on: {response.text}")
             else:
-                self.requests_log.write(f"Failed to turn on LED {self.id}: {response.status_code}")
+                self.log.error(f"Failed to turn on LED {self.id}: {response.status_code}")
         except Exception as e:
-            self.requests_log.write(f"Error while turning on LED {self.id}: {e}")
+            self.log.error(f"Error while turning on LED {self.id}: {e}")
 
     def off(self):
         print("LED OFF")
@@ -34,11 +40,11 @@ class LED() :
             response = requests.get(f"{self.NODEMCU_URL}/led?led{self.id}=off")
             if response.status_code == 200:
                 print(f"LED {self.id} turned off: {response.text}")
-                self.requests_log.write(f"LED {self.id} turned off: {response.text}")
+                self.log.info(f"LED {self.id} turned off: {response.text}")
             else:
-                self.requests_log.write(f"Failed to turn off LED {self.id}: {response.status_code}")
+                self.log.error(f"Failed to turn off LED {self.id}: {response.status_code}")
         except Exception as e:
-            self.requests_log.write(f"Error while turning off LED {self.id}: {e}")
+            self.log.error(f"Error while turning off LED {self.id}: {e}")
 
     def calculateXY(self):
         return (self.x-self.size//2,self.y-self.size//2),(self.x+self.size//2,self.y+self.size//2)
@@ -80,7 +86,7 @@ class LED() :
         top_left, bottom_right = self.calculateXY()
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.5
-        color = (255, 255, 255)  # Green color
+        color = (255, 255, 255)
         thickness = 2
 
         center_x, center_y = self.x,self.y
