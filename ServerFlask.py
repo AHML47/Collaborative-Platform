@@ -4,7 +4,7 @@ import threading
 import numpy as np
 from object import ObjectHelper
 #from Logger import Log
-from detector import HandDetector
+from detector.handDetector import HandDetector
 from component import LED
 app = Flask(__name__)
 
@@ -39,7 +39,7 @@ def generate_frames():
 @app.route('/upload_stream', methods=['POST'])
 def upload_stream():
     """Endpoint to receive video stream from the source server."""
-    global video_frame
+
     if 'video' not in request.files:
         return "No video file provided", 400
 
@@ -47,15 +47,13 @@ def upload_stream():
     x=0
     y=0
     cap=False
-    # Read the file into a NumPy array
+
     file_data = file.read()
     nparr = np.frombuffer(file_data, np.uint8)
-    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # Decode image from buffer
-    frame, cap, x, y = detector.process_image(frame,
-                                              cap,
-                                              x,
-                                              y
-                                              )
+    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    frame, cap, x, y = detector.process_image(frame,cap,x,y)
+
     frame = LED1.detect(frame,x,y)
     frame = LED2.detect(frame, x, y)
     frame = LED3.detect(frame, x, y)
@@ -66,12 +64,12 @@ def upload_stream():
     if frame is None:
         return "Invalid frame data", 400
 
-    # Update the global video_frame
-    with lock:
-        video_frame = frame
-    _,data = cv2.imencode('.jpg', video_frame)
+
+
+    _,data = cv2.imencode('.jpg', frame)
 
     return Response(data.tobytes(), mimetype='image/jpeg'),200
+
 @app.route('/loginVerfi', methods=['POST'])
 def loginVerfi():
     """Endpoint to verify login status."""
