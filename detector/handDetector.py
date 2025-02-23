@@ -2,17 +2,23 @@ import cv2
 import mediapipe as mp
 from queue import Queue
 import math
+import logging
 
 class HandDetector:
     def __init__(self):
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(
             static_image_mode=False,
-            max_num_hands=1,
+            max_num_hands=2,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5
         )
         self.mp_drawing = mp.solutions.drawing_utils
+        self.log = logging.getLogger(__name__)
+        file_h = logging.FileHandler(filename="LOGS/detector.log")
+        format_h = logging.Formatter('%(asctime)s - %(name) - %(levelname)s - %(message)s')
+        file_h.setFormatter(format_h)
+        self.log.addHandler(file_h)
 
     def detect_raised_fingers(self,hand_landmarks,raised_fingers):
         """Detect raised fingers based on hand landmarks."""
@@ -39,6 +45,7 @@ class HandDetector:
 
 
         fingers_tips = [8, 12, 16, 20]  # Index, Middle, Ring, Little finger tips
+        fingers_names=["Index", "Middle", "Ring", "Little"]
 
         thumb_tip = 4
         thumb_joint = 3
@@ -51,6 +58,7 @@ class HandDetector:
             if math.dist(Thumb, Finger) < 0.08 :
                 cap = True
                 #print(f' {fingers_tips[i]} : {math.dist(Thumb, Finger)} | x : {hand_landmarks.landmark[tip].x} | y : {hand_landmarks.landmark[tip].y}' )
+                self.log.info(f"capture detected by finger{fingers_names[i]}")
                 x=hand_landmarks.landmark[tip].x
                 y=hand_landmarks.landmark[tip].y
         return cap ,x,y
@@ -60,14 +68,7 @@ class HandDetector:
 
 
 
-    def process_image(self,
-                      frame,
-
-                      cap,
-                      x,
-                      y,
-                      raised_fingers=None
-                      ):
+    def process_image(self,frame,cap,x,y,raised_fingers=None):
         results = self.hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         if results.multi_hand_landmarks:

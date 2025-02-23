@@ -3,7 +3,7 @@ import requests
 import numpy as np
 from dotenv import load_dotenv, dotenv_values
 import os
-from streamer import StreamerHTTP
+from streamer.HTTPServer import StreamerHTTP
 
 # Initialize the HTTP streamer
 streamer = StreamerHTTP('index.html')
